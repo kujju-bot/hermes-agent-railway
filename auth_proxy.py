@@ -23,6 +23,37 @@ SECRET = secrets.token_bytes(32)
 COOKIE = "hermes_auth"
 MAX_AGE = 7 * 86400
 
+# Static asset extensions that should never be redirected to login.
+# The browser fetches these in the background and expects binary data,
+# not an HTML login page.
+_STATIC_EXTENSIONS = {
+    ".ico", ".css", ".js", ".png", ".jpg", ".jpeg", ".gif", ".svg",
+    ".woff", ".woff2", ".ttf", ".eot", ".map", ".webp", ".avif",
+}
+
+
+def _is_static_asset(path):
+    """Return True when *path* looks like a static-asset request."""
+    ext = os.path.splitext(path)[1].lower()
+    return ext in _STATIC_EXTENSIONS
+
+
+def _safe_next_path(raw):
+    """Validate a post-login redirect target (prevent open redirects)."""
+    if not raw or not isinstance(raw, str):
+        return None
+    # Must start with "/" but NOT be protocol-relative "//"
+    if not raw.startswith("/") or raw.startswith("//"):
+        return None
+    # Reject header-injection / control chars
+    if any(c in raw for c in ("\n", "\r", "\x00")):
+        return None
+    # Reject javascript: or data: tricks that some browsers might parse
+    if ":" in raw.split("?")[0]:
+        return None
+    return raw
+
+
 if not PASSWORD:
     print("ERROR: DASHBOARD_PASSWORD must be set.", file=sys.stderr)
     sys.exit(1)
@@ -66,11 +97,17 @@ async def login_post(request):
     password = data.get("password", "")
 
     if hmac.compare_digest(password, PASSWORD):
-        resp = web.HTTPFound("/")
+        next_path = _safe_next_path(request.cookies.get("_next")) or "/"
+        resp = web.HTTPFound(next_path)
         resp.set_cookie(COOKIE, make_token(), max_age=MAX_AGE, httponly=True, samesite="Lax")
+        resp.del_cookie("_next")
         return resp
 
-    raise web.HTTPFound("/login?error=1")
+    # On failed login, clear auth cookie but preserve _next so the user
+    # lands in the right place after they eventually enter the correct password.
+    resp = web.HTTPFound("/login?error=1")
+    resp.del_cookie(COOKIE)
+    raise resp
 
 
 async def logout(request):
@@ -81,14 +118,29 @@ async def logout(request):
 
 @web.middleware
 async def auth_middleware(request, handler):
+    # Always allow auth routes and health check
     if request.path in ("/login", "/logout", "/api/health"):
         return await handler(request)
+
+    # Never redirect static asset requests to the login page — the browser
+    # fetches these in the background and expects binary data, not HTML.
+    # Returning 401 lets the browser retry after auth without a redirect loop.
+    if _is_static_asset(request.path):
+        raise web.HTTPUnauthorized()
 
     token = request.cookies.get(COOKIE)
     if not token or not check_token(token):
         if request.path.startswith("/api/"):
             raise web.HTTPUnauthorized()
-        raise web.HTTPFound("/login")
+        # Store the original destination in a short-lived cookie so we can
+        # send the user back there after they log in.
+        target = _safe_next_path(request.path_qs)
+        resp = web.HTTPFound("/login")
+        if target:
+            resp.set_cookie("_next", target, max_age=600, httponly=True, samesite="Lax")
+        else:
+            resp.del_cookie("_next")
+        raise resp
 
     return await handler(request)
 
