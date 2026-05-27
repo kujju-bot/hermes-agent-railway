@@ -16,8 +16,10 @@ if [ "$AUTO_UPDATE" = "true" ]; then
 fi
 
 if [ "$LITE_MODE" = "true" ]; then
-  echo "Starting in LITE_MODE (no web UIs)..."
-  exec hermes gateway run
+  echo "Starting in LITE_MODE (no web UI)..."
+
+  hermes dashboard --host 127.0.0.1 --port 9119 --no-open &
+  exec python /auth_proxy.py
 else
   hermes dashboard --host 127.0.0.1 --port 9119 --no-open &
 
