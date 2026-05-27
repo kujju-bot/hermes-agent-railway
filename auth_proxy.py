@@ -113,6 +113,13 @@ async def logout(request):
     return resp
 
 
+def _safe_next_path(path):
+    """Validate a redirect target to prevent open redirects."""
+    if path and path.startswith("/") and not path.startswith("//") and "\n" not in path and "\r" not in path:
+        return path
+    return None
+
+
 @web.middleware
 async def auth_middleware(request, handler):
     # Always allow auth routes and health check
@@ -129,8 +136,8 @@ async def auth_middleware(request, handler):
     if not token or not check_token(token):
         if request.path.startswith("/api/"):
             raise web.HTTPUnauthorized()
-        # Store the original destination in a short-lived cookie so we can
-        # send the user back there after they log in.
+        # Remember where the user was trying to go so we can send them back after login.
+        # Encode it in a short-lived cookie rather than a query param.
         target = _safe_next_path(request.path_qs)
         resp = web.HTTPFound("/login")
         if target:
