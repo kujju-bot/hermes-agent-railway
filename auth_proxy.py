@@ -116,6 +116,13 @@ async def logout(request):
     return resp
 
 
+def _safe_next_path(path):
+    """Validate a redirect target to prevent open redirects."""
+    if path and path.startswith("/") and not path.startswith("//") and "\n" not in path and "\r" not in path:
+        return path
+    return None
+
+
 @web.middleware
 async def auth_middleware(request, handler):
     # Always allow auth routes and health check
