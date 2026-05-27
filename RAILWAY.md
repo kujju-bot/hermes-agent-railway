@@ -2,11 +2,16 @@
 
 # Deploy Your Own Hermes Agent
 
+> **Note:** This repository is a fork of [NousResearch/hermes-agent-railway](https://github.com/NousResearch/hermes-agent-railway) modified to include optimizations like `LITE_MODE` for running on Railway's free Hobby Plan.
+
 Your own AI agent, running 24/7, talking to you on Telegram. Think OpenClaw, but **better**. Hermes Agent by Nous Research comes with tool use, persistent memory, scheduled tasks, and multi-platform messaging — and this template gives you the whole thing with one click.
 
 ## About
 
 No YAML files. No SSH. No "just clone the repo and figure it out." This template gives you a fully managed Hermes Agent accessible from your browser. Access the **Hermes Dashboard** to manage sessions, analytics, and cron jobs, or jump into the **Hermes WebUI** for a native chat experience. The messaging gateway runs alongside it and automatically restarts when you change settings. Attach a Railway volume and your data sticks around forever.
+
+### Lite Mode (For Free Tier)
+Running the Dashboard, WebUI, and Gateway simultaneously can consume a lot of RAM. If you are on the Railway Hobby plan and experiencing high load or crashes, you can set the environment variable `LITE_MODE=true`. This disables the web interfaces and runs only the core messaging gateway, drastically reducing memory usage.
 
 ## Getting Started
 

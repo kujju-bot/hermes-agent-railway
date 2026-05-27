@@ -1,5 +1,7 @@
 # Hermes Agent on Railway
 
+> **Note:** This repository is a fork of [NousResearch/hermes-agent-railway](https://github.com/NousResearch/hermes-agent-railway) modified to include optimizations like `LITE_MODE`.
+
 Deploy [Hermes Agent](https://hermes-agent.nousresearch.com/) to Railway with one click. Hermes is an open-source AI agent by Nous Research with tool use, memory, messaging platform integrations, and a web dashboard.
 
 [![Deploy on Railway](https://railway.com/button.svg)](https://railway.com/template/TEMPLATE_ID?referralCode=REFERRAL_CODE)
@@ -31,6 +33,7 @@ This template goes beyond a basic Hermes deploy:
 |---|---|
 | `DASHBOARD_PASSWORD` | Login password (**required** — deploy will fail without it) |
 | `AUTO_UPDATE` | Pull latest Hermes on every restart (default: `true`, set to `false` to pin version) |
+| `LITE_MODE` | Set to `true` to disable all web interfaces and reduce RAM usage (ideal for Railway Hobby Plan) |
 
 All other configuration is done through the dashboard after deploy.
 
