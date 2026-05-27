@@ -261,7 +261,7 @@ async def login_post(request):
     password = data.get("password", "")
 
     if hmac.compare_digest(username, USERNAME) and hmac.compare_digest(password, PASSWORD):
-        resp = web.HTTPFound("/")
+        resp = web.HTTPFound("/dashboard")
         resp.set_cookie(COOKIE, make_token(), max_age=MAX_AGE, httponly=True, samesite="Lax")
         return resp
 
@@ -370,12 +370,21 @@ async def health(request):
     return web.json_response({"status": "ok"})
 
 
+def get_upstream_path(request):
+    path = request.path_qs
+    if request.path.startswith("/dashboard"):
+        path = path[10:]
+        if not path or path.startswith("?"):
+            path = "/" + path
+    return path
+
+
 async def proxy_ws(request):
     ws_client = web.WebSocketResponse()
     await ws_client.prepare(request)
 
     async with ClientSession() as session:
-        url = f"ws://127.0.0.1:9119{request.path_qs}"
+        url = f"ws://127.0.0.1:9119{get_upstream_path(request)}"
         async with session.ws_connect(url) as ws_upstream:
 
             async def forward(src, dst):
@@ -401,7 +410,7 @@ async def proxy(request):
         return await proxy_ws(request)
 
     async with ClientSession() as session:
-        url = f"{UPSTREAM}{request.path_qs}"
+        url = f"{UPSTREAM}{get_upstream_path(request)}"
         headers = {k: v for k, v in request.headers.items() if k.lower() not in ("host", "transfer-encoding")}
 
         body = await request.read()
@@ -440,7 +449,14 @@ def create_app():
     app.router.add_get("/api/health", health)
     app.router.add_post("/api/gateway/restart", restart_gateway)
     app.router.add_get("/api/gateway/status", gateway_status)
-    app.router.add_route("*", "/{path_info:.*}", proxy)
+    
+    app.router.add_get("/", lambda r: web.HTTPFound("/dashboard"))
+    app.router.add_route("*", "/api/{path_info:.*}", proxy)
+    app.router.add_route("*", "/assets/{path_info:.*}", proxy)
+    app.router.add_route("*", "/_next/{path_info:.*}", proxy)
+    app.router.add_route("*", "/favicon.ico", proxy)
+    app.router.add_route("*", "/dashboard", proxy)
+    app.router.add_route("*", "/dashboard/{path_info:.*}", proxy)
     return app
 
 
