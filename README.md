@@ -11,6 +11,7 @@ This template goes beyond a basic Hermes deploy:
 - **Full dashboard access** — manage config, API keys, sessions, logs, analytics, cron jobs, and skills from your browser. No SSH or CLI needed.
 - **Messaging gateway included** — Telegram, Discord, and Slack bots run alongside the dashboard. Configure platform tokens in the UI, hit restart, and your bot is live.
 - **Gateway management widget** — a floating status indicator and restart button injected into the dashboard. See at a glance if the gateway is running, restart it after config changes without redeploying.
+- **WebUI chat interface** — full support for the new React-based Chat WebUI accessible via `/webui/`.
 - **Cookie-based auth** — password-protected login page with session cookies. No repeated browser auth prompts like basic auth templates.
 - **Auto-updates** — pulls the latest Hermes release on every container restart. Always up to date, no manual intervention. Disable with `AUTO_UPDATE=false` to pin a version.
 - **Zero config to start** — deploy with just a password, then set up everything else (LLM provider, API keys, messaging platforms) from the dashboard UI.
@@ -28,7 +29,6 @@ This template goes beyond a basic Hermes deploy:
 
 | Variable | Description |
 |---|---|
-| `DASHBOARD_USER` | Login username (default: `admin`) |
 | `DASHBOARD_PASSWORD` | Login password (**required** — deploy will fail without it) |
 | `AUTO_UPDATE` | Pull latest Hermes on every restart (default: `true`, set to `false` to pin version) |
 

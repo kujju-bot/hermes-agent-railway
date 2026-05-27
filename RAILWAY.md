@@ -6,13 +6,13 @@ Your own AI agent, running 24/7, talking to you on Telegram. Think OpenClaw, but
 
 ## About
 
-No YAML files. No SSH. No "just clone the repo and figure it out." This template gives you a fully managed Hermes Agent accessible from your browser. Add API keys, connect messaging platforms, manage sessions, view analytics, and schedule cron jobs — all from the dashboard. The messaging gateway runs alongside it and automatically restarts when you change settings. Attach a Railway volume and your data sticks around forever.
+No YAML files. No SSH. No "just clone the repo and figure it out." This template gives you a fully managed Hermes Agent accessible from your browser. Access the **Hermes Dashboard** to manage sessions, analytics, and cron jobs, or jump into the **Hermes WebUI** for a native chat experience. The messaging gateway runs alongside it and automatically restarts when you change settings. Attach a Railway volume and your data sticks around forever.
 
 ## Getting Started
 
 ### 1. Deploy to Railway
 
-Click the **Deploy on Railway** button, set a `DASHBOARD_PASSWORD`, and deploy. Once it's live, open your Railway-provided URL and log in.
+Click the **Deploy on Railway** button, set your `DASHBOARD_PASSWORD`, and deploy. Once it's live, open your Railway-provided URL, enter your password, and you're in! Access the chat interface by clicking the "WebUI" button in the corner.
 
 ### 2. Add an LLM Provider
 
