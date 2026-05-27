@@ -262,11 +262,34 @@ async def webui_proxy(request):
             data=body,
             allow_redirects=False,
         ) as resp:
+            content_type = resp.headers.get("content-type", "")
+
+            # SSE / streaming: forward chunk-by-chunk so the browser receives
+            # tokens in real-time instead of waiting for the full response.
+            if "text/event-stream" in content_type:
+                streaming_resp = web.StreamResponse(status=resp.status)
+                streaming_resp.content_type = "text/event-stream"
+                streaming_resp.headers["Cache-Control"] = "no-cache"
+                streaming_resp.headers["X-Accel-Buffering"] = "no"
+                streaming_resp.headers["Connection"] = "close"
+                excluded = {"transfer-encoding", "content-encoding", "content-length",
+                            "content-type", "cache-control", "connection"}
+                for k, v in resp.headers.items():
+                    if k.lower() not in excluded:
+                        streaming_resp.headers[k] = v
+                await streaming_resp.prepare(request)
+                try:
+                    async for chunk in resp.content.iter_any():
+                        await streaming_resp.write(chunk)
+                except (BrokenPipeError, ConnectionResetError, ConnectionAbortedError, OSError):
+                    pass
+                await streaming_resp.write_eof()
+                return streaming_resp
+
             excluded = {"transfer-encoding", "content-encoding", "content-length"}
             proxy_headers = {k: v for k, v in resp.headers.items() if k.lower() not in excluded}
             content = await resp.read()
 
-            content_type = resp.headers.get("content-type", "")
             if "text/html" in content_type:
                 html_headers = {k: v for k, v in proxy_headers.items() if k.lower() != "content-type"}
                 html = content.decode("utf-8", errors="replace")
