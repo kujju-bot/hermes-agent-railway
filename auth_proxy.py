@@ -66,8 +66,10 @@ async def login_post(request):
     password = data.get("password", "")
 
     if hmac.compare_digest(password, PASSWORD):
-        resp = web.HTTPFound("/")
+        next_path = _safe_next_path(request.cookies.get("_next")) or "/"
+        resp = web.HTTPFound(next_path)
         resp.set_cookie(COOKIE, make_token(), max_age=MAX_AGE, httponly=True, samesite="Lax")
+        resp.del_cookie("_next")
         return resp
 
     raise web.HTTPFound("/login?error=1")
@@ -79,6 +81,13 @@ async def logout(request):
     return resp
 
 
+def _safe_next_path(path):
+    """Validate a redirect target to prevent open redirects."""
+    if path and path.startswith("/") and not path.startswith("//") and "\n" not in path and "\r" not in path:
+        return path
+    return None
+
+
 @web.middleware
 async def auth_middleware(request, handler):
     if request.path in ("/login", "/logout", "/api/health"):
@@ -88,7 +97,15 @@ async def auth_middleware(request, handler):
     if not token or not check_token(token):
         if request.path.startswith("/api/"):
             raise web.HTTPUnauthorized()
-        raise web.HTTPFound("/login")
+        # Remember where the user was trying to go so we can send them back after login.
+        # Encode it in a short-lived cookie rather than a query param.
+        target = _safe_next_path(request.path_qs)
+        resp = web.HTTPFound("/login")
+        if target:
+            resp.set_cookie("_next", target, max_age=600, httponly=True, samesite="Lax")
+        else:
+            resp.del_cookie("_next")
+        raise resp
 
     return await handler(request)
 
