@@ -17,4 +17,6 @@ fi
 
 hermes dashboard --host 127.0.0.1 --port 9119 --no-open &
 
+cd /opt/hermes-agent && HERMES_WEBUI_PORT=8787 venv/bin/python /opt/hermes-webui/server.py &
+
 exec python /auth_proxy.py

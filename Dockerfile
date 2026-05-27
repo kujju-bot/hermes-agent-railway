@@ -11,6 +11,8 @@ ENV PATH="/root/.local/bin:$PATH"
 
 RUN git clone --recurse-submodules https://github.com/NousResearch/hermes-agent.git /opt/hermes-agent
 
+RUN git clone https://github.com/nesquena/hermes-webui.git /opt/hermes-webui
+
 WORKDIR /opt/hermes-agent
 RUN uv venv venv --python 3.11 \
     && VIRTUAL_ENV=/opt/hermes-agent/venv uv pip install -e ".[all]"
@@ -21,6 +23,7 @@ RUN mkdir -p /root/.hermes/{cron,sessions,logs,memories,skills,pairing,hooks,ima
     && cp cli-config.yaml.example /root/.hermes/config.yaml \
     && touch /root/.hermes/.env
 
+COPY templates/ /templates/
 COPY auth_proxy.py /auth_proxy.py
 COPY entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh
