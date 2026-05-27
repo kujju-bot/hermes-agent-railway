@@ -11,13 +11,13 @@ import string
 import subprocess
 import sys
 import time
+import aiohttp
 
 from aiohttp import web, ClientSession, WSMsgType
 
 HERMES_HOME = "/root/.hermes"
 UPSTREAM = "http://127.0.0.1:9119"
 WEBUI_UPSTREAM = "http://127.0.0.1:8787"
-USERNAME = os.environ.get("DASHBOARD_USER", "admin")
 PASSWORD = os.environ.get("DASHBOARD_PASSWORD", "")
 SECRET = secrets.token_bytes(32)
 COOKIE = "hermes_auth"
@@ -31,6 +31,7 @@ if not PASSWORD:
 _TEMPLATE_DIR = pathlib.Path("/templates")
 LOGIN_HTML = _TEMPLATE_DIR.read_text("login.html") if False else (_TEMPLATE_DIR / "login.html").read_text()
 GATEWAY_WIDGET = (_TEMPLATE_DIR / "gateway_widget.html").read_text()
+LOADING_HTML = (_TEMPLATE_DIR / "loading.html").read_text()
 
 
 def make_token():
@@ -62,10 +63,9 @@ async def login_page(request):
 
 async def login_post(request):
     data = await request.post()
-    username = data.get("username", "")
     password = data.get("password", "")
 
-    if hmac.compare_digest(username, USERNAME) and hmac.compare_digest(password, PASSWORD):
+    if hmac.compare_digest(password, PASSWORD):
         resp = web.HTTPFound("/")
         resp.set_cookie(COOKIE, make_token(), max_age=MAX_AGE, httponly=True, samesite="Lax")
         return resp
@@ -172,28 +172,33 @@ async def _proxy_http(request, upstream_base, inject_widget=False, restart_check
         headers = {k: v for k, v in request.headers.items() if k.lower() not in ("host", "transfer-encoding")}
 
         body = await request.read()
-        async with session.request(
-            request.method,
-            url,
-            headers=headers,
-            data=body,
-            allow_redirects=False,
-        ) as resp:
-            excluded = {"transfer-encoding", "content-encoding", "content-length"}
-            proxy_headers = {k: v for k, v in resp.headers.items() if k.lower() not in excluded}
-            content = await resp.read()
+        try:
+            async with session.request(
+                request.method,
+                url,
+                headers=headers,
+                data=body,
+                allow_redirects=False,
+            ) as resp:
+                excluded = {"transfer-encoding", "content-encoding", "content-length"}
+                proxy_headers = {k: v for k, v in resp.headers.items() if k.lower() not in excluded}
+                content = await resp.read()
 
-            if restart_check and (request.method, request.path) in RESTART_PATHS and resp.status < 400:
-                start_gateway()
+                if restart_check and (request.method, request.path) in RESTART_PATHS and resp.status < 400:
+                    start_gateway()
 
-            content_type = resp.headers.get("content-type", "")
-            if "text/html" in content_type:
-                html_headers = {k: v for k, v in proxy_headers.items() if k.lower() != "content-type"}
-                html = content.decode("utf-8", errors="replace")
-                if inject_widget:
-                    html = html.replace("</body>", GATEWAY_WIDGET + "</body>")
-                return web.Response(status=resp.status, headers=html_headers, text=html, content_type="text/html")
-            return web.Response(status=resp.status, headers=proxy_headers, body=content)
+                content_type = resp.headers.get("content-type", "")
+                if "text/html" in content_type:
+                    html_headers = {k: v for k, v in proxy_headers.items() if k.lower() != "content-type"}
+                    html = content.decode("utf-8", errors="replace")
+                    if inject_widget:
+                        html = html.replace("</body>", GATEWAY_WIDGET + "</body>")
+                    return web.Response(status=resp.status, headers=html_headers, text=html, content_type="text/html")
+                return web.Response(status=resp.status, headers=proxy_headers, body=content)
+        except aiohttp.ClientConnectorError:
+            if "text/html" in request.headers.get("Accept", ""):
+                return web.Response(status=503, content_type="text/html", text=LOADING_HTML)
+            return web.Response(status=503, text="Service Unavailable: Upstream is down.")
 
 
 # ---------------------------------------------------------------------------

@@ -186,12 +186,8 @@
     $error
     <form method="POST" action="/login">
       <div class="field">
-        <label for="username">Username</label>
-        <input id="username" name="username" type="text" autocomplete="username" required>
-      </div>
-      <div class="field">
-        <label for="password">Password</label>
-        <input id="password" name="password" type="password" autocomplete="current-password" required>
+        <label for="password">GATEWAY_TOKEN</label>
+        <input id="password" name="password" type="password" autocomplete="current-password" placeholder="Enter your token to continue" required autofocus>
       </div>
       <button type="submit">Continue</button>
     </form>

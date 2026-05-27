@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Loading...</title>
+<style>
+body { background: #0a0f14; color: #e0f0f0; font-family: sans-serif; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; margin: 0; }
+.loader { border: 3px solid rgba(45,212,191,0.1); border-top: 3px solid #2dd4bf; border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; margin-bottom: 20px; }
+@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+h2 { font-weight: 500; letter-spacing: 0.05em; margin: 0; }
+p { color: #7899aa; margin-top: 8px; font-size: 0.9em; }
+</style>
+</head>
+<body>
+<div class="loader"></div>
+<h2>Loading Hermes</h2>
+<p>Starting up... this may take a few seconds.</p>
+<script>
+    setTimeout(function() {
+        window.location.reload(true);
+    }, 2000);
+</script>
+</body>
+</html>
