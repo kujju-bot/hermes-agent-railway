@@ -58,6 +58,34 @@ Internet -> Railway -> Auth Proxy (cookie login) -> Hermes Dashboard (port 9119)
                            +-> /api/gateway/status (authenticated, check bot status)
 ```
 
+## API Server
+
+The auth proxy exposes the Hermes API server at `/hapi/v1/*` — an OpenAI-compatible endpoint. Use your **dashboard password** as the Bearer token:
+
+```bash
+# List models
+curl https://your-app.up.railway.app/hapi/v1/models \
+  -H "Authorization: Bearer <DASHB...# Chat
+curl https://your-app.up.railway.app/hapi/v1/chat/completions \
+  -H "Authorization: Bearer <DASHB...  -H "Content-Type: application/json" \
+  -d '{"model": "hermes-agent", "messages": [{"role": "user", "content": "Hello!"}]}'
+```
+
+### API Server Env Vars
+
+| Variable | Description |
+|---|---|
+| `API_SERVER_KEY` | Bearer token for the Hermes API server (set in Railway env vars) |
+| `API_SERVER_ENABLED` | Must be `true` (default when API server is configured) |
+
+### Endpoints
+
+- `POST /hapi/v1/chat/completions` — OpenAI Chat Completions (streaming supported)
+- `POST /hapi/v1/responses` — OpenAI Responses API
+- `GET /hapi/v1/models` — model discovery
+- `GET /hapi/v1/runs/{id}` — run status
+- `GET /hapi/v1/health` — health check
+
 ## Resources
 
 - [Hermes Agent Documentation](https://hermes-agent.nousresearch.com/docs)
