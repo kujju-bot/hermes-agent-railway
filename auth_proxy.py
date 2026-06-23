@@ -99,7 +99,7 @@ def _safe_next_path(path):
 
 @web.middleware
 async def auth_middleware(request, handler):
-    if request.path in ("/login", "/logout", "/api/health") or request.path.startswith("/webhooks/"):
+    if request.path in ("/login", "/logout", "/api/health") or request.path.startswith("/webhooks/") or request.path.startswith("/hapi/"):
         return await handler(request)
 
     token = request.cookies.get(COOKIE)
@@ -279,6 +279,10 @@ async def _proxy_http(request, upstream_base, inject_widget=False, restart_check
 # ---------------------------------------------------------------------------
 
 async def proxy(request):
+    # API server proxy: /hapi/v1/* -> API server on :8642
+    if request.path.startswith("/hapi/"):
+        return await api_server_proxy(request)
+    
     if request.headers.get("Upgrade", "").lower() == "websocket":
         url = f"ws://127.0.0.1:9119{request.path_qs}"
         return await _proxy_ws(request, url)
@@ -475,10 +479,6 @@ def create_app():
 
     # Webhook filter proxy — forwards to filter proxy on port 8645
     app.router.add_route("*", "/webhooks/{path_info:.*}", webhook_proxy)
-
-    # API server proxy (/hapi/v1/* -> API server on :8642)
-    app.router.add_route("*", "/hapi/v1/{path_info:.*}", api_server_proxy)
-    app.router.add_get("/hapi/v1", lambda r: web.HTTPMovedPermanently("/hapi/v1/"))
 
     # Dashboard catch-all
     app.router.add_route("*", "/{path_info:.*}", proxy)
